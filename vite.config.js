@@ -3,6 +3,6 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/Task-4/',
+  base: '/Task-5/',
   plugins: [react()],
 })
