@@ -1,0 +1,156 @@
+.filter-toolbar {
+  padding:18px 26px;
+  border-bottom:1px solid #edf0e9;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:12px
+}
+
+.filter-fields {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  flex:1;
+  min-width:0;
+  gap:12px;
+  border:0;
+  margin:0;
+  padding:0
+}
+
+.filter-fields label {
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  gap:6px;
+  font-size:11px;
+  color:#69765f
+}
+
+.filter-fields select {
+  width:100%;
+  min-width:0;
+  font-size:12px
+}
+
+.card-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  list-style:none;
+  margin:0;
+  padding:22px 26px
+}
+
+.card-grid > li {
+  min-width:0
+}
+
+.item-card {
+  height:100%;
+  border:1px solid #dfe5dc;
+  border-radius:12px;
+  background:#fff
+}
+
+.item-card.selected {
+  background:#f4f7ef;
+  border-color:#8fa98b
+}
+
+.item-card-link {
+  height:100%;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-content:start;
+  align-items:start;
+  gap:16px;
+  padding:20px;
+  border-radius:12px
+}
+
+.item-card-link:hover:not([aria-disabled="true"]) {
+  background:#f6f8f1
+}
+
+.item-card-copy {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+  overflow-wrap:anywhere
+}
+
+.item-card-copy strong {
+  font-size:14px;
+  font-weight:600
+}
+
+.item-card-copy > span {
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  line-clamp:3;
+  overflow:hidden;
+  color:#747c6f;
+  font-size:12px;
+  line-height:1.6
+}
+
+.item-card-details {
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  padding-top:12px;
+  border-top:1px solid #edf0e9;
+  color:#69765f;
+  font-size:10px;
+  overflow-wrap:anywhere
+}
+
+.card-category {
+  font-weight:600
+}
+
+.card-id {
+  font-family:monospace;
+  margin-left:auto
+}
+
+.item-card-details .row-arrow {
+  margin-left:0
+}
+
+.card-grid > li:nth-child(3n+2) .item-avatar {
+  background:#f3ece0;
+  color:#9a8061
+}
+
+.card-grid > li:nth-child(3n) .item-avatar {
+  background:#eaf0ee;
+  color:#63847a
+}
+
+.with-editor .card-grid {
+  grid-template-columns:minmax(0,1fr)
+}
+
+@media(max-width:600px) {
+  .filter-toolbar {
+    padding:16px 17px
+  }
+  .filter-fields {
+    flex-basis:100%;
+    grid-template-columns:minmax(0,1fr)
+  }
+  .card-grid {
+    padding:18px 17px;
+    grid-template-columns:minmax(0,1fr)
+  }
+  .item-card-link {
+    padding:16px;
+    gap:12px
+  }
+}

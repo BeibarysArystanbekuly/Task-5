@@ -4,8 +4,8 @@ import test from 'node:test'
 import vm from 'node:vm'
 import { transformWithOxc } from 'vite'
 
-// Exercise the actual components with controlled API promises, without adding
-// browser/test dependencies. Each editor instance models React's selected-ID key.
+// Exercise the extracted editor with controlled API promises. Each instance
+// models React's routed selected-ID key; route integration is tested separately.
 let rendering
 const apiCalls = []
 const api = Object.fromEntries(['getItem', 'getItemsList', 'createItem', 'updateItem', 'deleteItem'].map((name) => [name, (...args) => {
@@ -40,14 +40,13 @@ function useEffect(callback, dependencies) {
 
 const jsx = (type, props, key) => ({ type, props, key })
 const { code } = await transformWithOxc(
-  (await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')) + '\nexport { ItemEditor }',
-  'App.jsx', { jsx: { runtime: 'automatic' } },
+  await readFile(new URL('../src/components/ItemEditor.jsx', import.meta.url), 'utf8'),
+  'ItemEditor.jsx', { jsx: { runtime: 'automatic' } },
 )
 const modules = {
   react: { useState, useEffect },
   'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'fragment' },
-  './api/fakeApi': api,
-  './App.css': {},
+  '../services/service.js': api,
 }
 const componentModule = new vm.SourceTextModule(code)
 await componentModule.link((specifier) => {
@@ -58,7 +57,7 @@ await componentModule.link((specifier) => {
   })
 })
 await componentModule.evaluate()
-const { default: App, ItemEditor } = componentModule.namespace
+const { default: ItemEditor } = componentModule.namespace
 
 function mount(Component, props = {}) {
   const owner = { states: [], effects: [], pending: [], cursor: 0, dirty: true, disposed: false }
@@ -92,7 +91,6 @@ const field = (owner, id) => elements(owner.tree).find((node) => node.props?.id 
 const button = (owner, label) => elements(owner.tree).find((node) => node.type === 'button' && text(node) === label)
 const calls = (name) => apiCalls.filter((call) => call.name === name)
 const record = (id, overrides = {}) => ({ id, name: `Item ${id}`, description: `Details ${id}`, category: 'General', status: 'Planned', priority: 'Normal', owner: 'Team', dueDate: '2026-12-01', ...overrides })
-const response = (data) => ({ data, total: data.length, page: 1, limit: 10, totalPages: data.length ? 1 : 0 })
 async function settle(...owners) {
   for (let i = 0; i < 8; i++) {
     await Promise.resolve()
@@ -126,32 +124,6 @@ test('switching selected IDs ignores late details and late errors', async () => 
   }
 })
 
-test('search and reload ignore superseded list responses and recover from errors', async () => {
-  const app = mount(App)
-  const initial = calls('getItemsList').at(-1)
-  elements(app.tree).find((node) => node.props?.type === 'search').props.onChange({ target: { value: 'Item 2' } })
-  app.flush()
-  const search = calls('getItemsList').at(-1)
-  assert.match(search.args[0], /search=Item\+2/)
-  search.resolve(response([record(2)]))
-  await settle(app)
-  initial.resolve(response([record(1)]))
-  await settle(app)
-  assert.ok(text(app.tree).includes('Item 2'))
-  assert.ok(!text(app.tree).includes('Item 1'))
-  elements(app.tree).find((node) => node.type === 'button' && text(node).includes('Reload')).props.onClick()
-  app.flush()
-  calls('getItemsList').at(-1).reject(new Error('Offline'))
-  await settle(app)
-  assert.ok(text(app.tree).includes('Offline'))
-  button(app, 'Try again').props.onClick()
-  app.flush()
-  calls('getItemsList').at(-1).resolve(response([]))
-  await settle(app)
-  assert.ok(text(app.tree).includes('No matching items'))
-  app.dispose()
-})
-
 test('detail failures can be retried and unmount cleans up completion callbacks', async () => {
   const props = editorProps(9)
   const editor = mount(ItemEditor, props)
@@ -170,26 +142,6 @@ test('detail failures can be retried and unmount cleans up completion callbacks'
   await settle()
   assert.equal(props.events.completed.length, 0)
   assert.equal(completion.args[0], 9)
-})
-
-test('reloading an emptied last page loads the new last page', async () => {
-  const app = mount(App)
-  calls('getItemsList').at(-1).resolve({ ...response([record(1)]), total: 11, totalPages: 2 })
-  await settle(app)
-  elements(app.tree).find((node) => node.props?.['aria-label'] === 'Next page').props.onClick()
-  app.flush()
-  assert.match(calls('getItemsList').at(-1).args[0], /page=2/)
-  calls('getItemsList').at(-1).resolve({ ...response([record(11)]), total: 11, page: 2, totalPages: 2 })
-  await settle(app)
-  elements(app.tree).find((node) => node.type === 'button' && text(node).includes('Reload')).props.onClick()
-  app.flush()
-  calls('getItemsList').at(-1).resolve({ ...response([]), total: 10, page: 2, totalPages: 1 })
-  await settle(app)
-  assert.match(calls('getItemsList').at(-1).args[0], /page=1/)
-  calls('getItemsList').at(-1).resolve(response([record(1)]))
-  await settle(app)
-  assert.ok(text(app.tree).includes('Page 1 of 1'))
-  app.dispose()
 })
 
 test('completion captures the ID, preserves unsaved edits, and handles failure and retry', async () => {
@@ -222,28 +174,6 @@ test('completion captures the ID, preserves unsaved edits, and handles failure a
   assert.equal(props.events.completed[0].id, 7)
   assert.equal(button(editor, 'Completed').props.disabled, true)
   editor.dispose()
-})
-
-test('parent blocks conflicting selection and creation, and applies completion by response ID', async () => {
-  const app = mount(App)
-  calls('getItemsList').at(-1).resolve(response([record(1), record(2)]))
-  await settle(app)
-  let rows = elements(app.tree).filter((node) => node.props?.className?.startsWith('item-row'))
-  rows[0].props.onClick()
-  app.flush()
-  const editor = elements(app.tree).find((node) => node.type === ItemEditor)
-  editor.props.onBusy(true)
-  app.flush()
-  rows = elements(app.tree).filter((node) => node.props?.className?.startsWith('item-row'))
-  assert.ok(rows.every((node) => node.props.disabled))
-  assert.equal(elements(app.tree).find((node) => node.type === 'button' && text(node).includes('New item')).props.disabled, true)
-  editor.props.onCompleted(record(1, { status: 'Completed' }))
-  editor.props.onBusy(false)
-  app.flush()
-  assert.ok(text(app.tree).includes('Item #1 marked complete.'))
-  calls('getItemsList').at(-1).resolve(response([record(1, { status: 'Completed' }), record(2)]))
-  await settle(app)
-  app.dispose()
 })
 
 test('create retries a failed extra-details save on the same ID, then edits and removes', async () => {

@@ -231,6 +231,131 @@ h1 {
   border-color:transparent
 }
 
+.button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid #dce2dc;
+  background:white;
+  color:#34443b;
+  border-radius:8px;
+  padding:10px 15px;
+  font-weight:600;
+  transition:background .15s
+}
+
+.button.primary {
+  background:#345942;
+  border-color:#345942;
+  color:white;
+  padding:12px 20px
+}
+
+.button:hover:not([aria-disabled="true"]) {
+  background:#edf2e9;
+  border-color:#b1c0ad
+}
+
+.button.primary:hover:not([aria-disabled="true"]) {
+  background:#264932;
+  border-color:#264932
+}
+
+a[aria-disabled="true"] {
+  opacity:.45;
+  cursor:not-allowed
+}
+
+.topbar {
+  height:auto;
+  min-height:86px;
+  gap:20px;
+  flex-wrap:wrap;
+  padding-top:16px;
+  padding-bottom:16px
+}
+
+.navigation {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px
+}
+
+.navigation a {
+  border-radius:7px;
+  padding:8px 12px;
+  color:#69765f;
+  font-size:13px
+}
+
+.navigation a:hover,.navigation a.active {
+  color:#345942;
+  background:#edf2e5
+}
+
+.skip-link {
+  position:absolute;
+  left:16px;
+  top:-100px;
+  z-index:10;
+  background:#fff;
+  border-radius:6px;
+  padding:12px
+}
+
+.skip-link:focus {
+  top:12px
+}
+
+.content-panel {
+  padding:32px;
+  max-width:900px
+}
+
+.content-panel h2 {
+  font-size:20px;
+  margin-bottom:12px
+}
+
+.content-panel p {
+  color:#69765f;
+  line-height:1.8;
+  margin-bottom:24px
+}
+
+.content-panel .metric {
+  font-size:48px;
+  color:#345942;
+  line-height:1.2;
+  font-weight:600
+}
+
+.dashboard-items {
+  list-style:none;
+  padding:0;
+  margin:0 0 24px
+}
+
+.dashboard-items a {
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding:16px 0;
+  border-bottom:1px solid #edf0e9;
+  overflow-wrap:anywhere
+}
+
+.dashboard-items a:hover {
+  color:#52764b
+}
+
+.dashboard-items span {
+  color:#69765f;
+  font-size:12px
+}
+
 .item-avatar {
   flex-shrink:0;
   width:42px;
@@ -504,7 +629,23 @@ h1 {
 
 @media(max-width:600px) {
   .topbar {
-    height:70px
+    height:auto;
+    gap:12px
+  }
+  .navigation {
+    width:100%;
+    gap:2px
+  }
+  .navigation a {
+    padding:7px 9px;
+    font-size:12px
+  }
+  .content-panel {
+    padding:24px 18px
+  }
+  .item-status {
+    max-width:78px;
+    white-space:normal
   }
   .badge {
     display:none

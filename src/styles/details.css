@@ -1,0 +1,26 @@
+.details-navigation {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding:20px 26px 0
+}
+
+.details-navigation a {
+  color:#52764b;
+  font-size:12px;
+  font-weight:600;
+  padding:4px 0
+}
+
+.details-navigation a:hover:not([aria-disabled="true"]) {
+  text-decoration:underline;
+  text-underline-offset:4px
+}
+
+@media(max-width:600px) {
+  .details-navigation {
+    padding:18px 17px 0
+  }
+}

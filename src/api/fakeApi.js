@@ -1,5 +1,6 @@
 import { API_CONFIG, DATA_KEY } from "./settings.js";
 import { initialDataSample } from "./initial-data-sample.js";
+import { isValidItemId } from "../utils/itemId.js";
 
 function fakeRequest(operation, options = {}) {
   const {
@@ -43,27 +44,35 @@ function writeData(items) {
 
 initializeDatabase();
 
+function filterItems(items, params) {
+  const search = params.get("search");
+  // search by name and description
+  if (search) {
+    items = items.filter(
+      (item) =>
+        item.name.toLowerCase().includes(search.toLowerCase()) ||
+        item.description.toLowerCase().includes(search.toLowerCase()),
+    );
+  }
+  // Apply filters before counting and paginating. Older records use the same
+  // defaults as the editor and cards when extended fields are absent.
+  const defaults = { category: "General", status: "Planned", priority: "Normal" };
+  for (const field of ["category", "status", "priority"]) {
+    const value = params.get(field);
+    if (value) items = items.filter((item) => (item[field] ?? defaults[field]) === value);
+  }
+  return items;
+}
+
 export async function getItemsList(query = "") {
   return fakeRequest(() => {
     const params = new URLSearchParams(query);
-    const search = params.get("search");
     const sort = params.get("sort") || "name";
-    const page = Number(params.get("page")) || 1;
-    const limit = Number(params.get("limit")) || 10;
-
-    let items = readData();
-
-    // search by name and description
-    if (search) {
-      items = items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(search.toLowerCase()) ||
-          item.description.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    //add other filter fields here
-    //...
-    //
+    const requestedPage = Number(params.get("page"));
+    const requestedLimit = Number(params.get("limit"));
+    const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+    const limit = Number.isSafeInteger(requestedLimit) && requestedLimit > 0 ? requestedLimit : 10;
+    let items = filterItems(readData(), params);
 
     // SORT by name
     items = [...items].sort((a, b) => {
@@ -94,14 +103,56 @@ export async function getItemsList(query = "") {
   });
 }
 
+export async function getDashboard(query = "") {
+  return fakeRequest(() => {
+    const items = filterItems(readData(), new URLSearchParams(query));
+    const total = items.length;
+    const completed = items.filter((item) => item.status === "Completed").length;
+
+    function breakdown(field, fallback) {
+      const counts = new Map();
+      for (const item of items) {
+        const name = item[field] ?? fallback;
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+      return [...counts].map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    }
+
+    return {
+      statistics: {
+        total,
+        completed,
+        inProgress: items.filter((item) => item.status === "In progress").length,
+        highPriority: items.filter((item) => ["High", "Urgent"].includes(item.priority)).length,
+        completionRate: total ? Math.round(completed / total * 100) : 0,
+      },
+      breakdowns: {
+        category: breakdown("category", "General"),
+        status: breakdown("status", "Planned"),
+      },
+      items: [...items].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 5),
+    };
+  });
+}
+
 export async function getItem(id) {
   return fakeRequest(() => {
+    if (!isValidItemId(id)) {
+      const error = new Error("Invalid item ID");
+      error.status = 404;
+      error.code = "INVALID_ITEM_ID";
+      throw error;
+    }
     const items = readData();
 
     const item = items.find((item) => item.id === Number(id));
 
     if (!item) {
-      throw new Error("Item not found");
+      const error = new Error("Item not found");
+      error.status = 404;
+      error.code = "ITEM_NOT_FOUND";
+      throw error;
     }
 
     return item;
