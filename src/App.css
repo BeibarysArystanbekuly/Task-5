@@ -587,3 +587,31 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.completion-action {
+  margin-top: 22px;
+  padding: 16px;
+  background: #f4f7ef;
+  border: 1px solid #e1e8d9;
+  border-radius: 9px;
+}
+
+.completion-action p {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #69765f;
+}
+
+.item-status {
+  flex-shrink: 0;
+  border-radius: 5px;
+  padding: 3px 7px;
+  background: #f0f2ed;
+  color: #65725b;
+  font-size: 10px;
+}
+
+.item-status.is-complete {
+  background: #e7f1df;
+  color: #3e6230;
+}
